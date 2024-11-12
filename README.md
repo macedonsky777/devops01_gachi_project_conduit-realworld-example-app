@@ -39,6 +39,41 @@ Full stack блог-платформа, що реалізує специфіка
 └── docker-compose.prod.yml # Продакшен конфігурація
 ```
 
+## Конфігурація проекту
+
+### Frontend (Vite)
+Для правильної роботи з Docker та проксування API запитів, переконайтеся що ваш `vite.config.js` містить наступні налаштування:
+
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react-swc'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: '0.0.0.0',    // Дозволяє доступ ззовні контейнера
+    port: 3000,         // Порт для фронтенд серверу
+    watch: {
+      usePolling: true  // Необхідно для правильної роботи hot-reload в Docker
+    },
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL || 'http://backend:3001', // URL бекенду
+        changeOrigin: true
+      }
+    }
+  }
+})
+```
+
+Важливі налаштування:
+- `host: '0.0.0.0'` - необхідно для доступу до dev-сервера з Docker контейнера
+- `usePolling: true` - забезпечує коректну роботу file watching в Docker
+- Проксі налаштування для API запитів:
+  - В розробці використовує `http://backend:3001` (DNS ім'я з docker-compose)
+  - В продакшені використовує значення з `VITE_API_URL`
+
+
 ## Запуск проекту
 
 ### Змінні середовища
